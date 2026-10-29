@@ -1,8 +1,9 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 // The spec doesn't say how to identify the button, so we look for a button whose accessible name mentions "top".
+// includeHidden: SPEC.md:15 requires the button to be hidden at the top, and getByRole skips hidden elements by default.
 function backToTop(page: Page) {
-  return page.getByRole('button', { name: /top/i });
+  return page.getByRole('button', { name: /top/i, includeHidden: true });
 }
 
 // "Hidden" is read as not seen by the user: not rendered, transparent, or outside the viewport.
