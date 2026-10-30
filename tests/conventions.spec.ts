@@ -36,13 +36,21 @@ test.describe('SPEC.md:6 #repos shows repo cards, or a plain message when there 
     const response = page.waitForResponse(REPOS_API);
     await page.goto('./');
     const res = await response;
-    const repos = res.ok() ? ((await res.json()) as Array<{ name: string }>) : [];
-    test.skip(repos.length === 0, 'GitHub returned no repos; the empty and failure cases are covered below');
+    // The profile README repo is the one named after the user in the request URL (GitHub ignores case).
+    const user = new URL(res.url()).pathname.split('/')[2].toLowerCase();
+    const all = res.ok() ? ((await res.json()) as Array<{ name: string }>) : [];
+    const repos = all.filter(({ name }) => name.toLowerCase() !== user);
+    test.skip(repos.length === 0, 'GitHub returned no repos to list; the empty and failure cases are covered below');
 
     const section = page.locator('#repos');
     for (const { name } of repos) {
       await expect(section, `repo "${name}" should be listed`).toContainText(name);
     }
+    // Other repo names can contain the user's name (e.g. <user>.github.io), so look for a card title that is exactly it.
+    const profileTitle = section
+      .locator('h1, h2, h3, h4, h5, h6, a')
+      .filter({ hasText: new RegExp(`^\\s*${user.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') });
+    await expect(profileTitle, 'the profile README repo should not be listed').toHaveCount(0);
   });
 
   test('shows a message when there are no repos', async ({ page }) => {
